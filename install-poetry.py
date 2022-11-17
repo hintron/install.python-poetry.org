@@ -274,6 +274,7 @@ class PoetryInstallationError(RuntimeError):
 
 class VirtualEnvironment:
     def __init__(self, path: Path) -> None:
+        print(f"MGH: Making paths with {path}")
         self._path = path
         self._bin_path = self._path.joinpath(
             "Scripts" if WINDOWS and not MINGW else "bin"
@@ -306,15 +307,20 @@ class VirtualEnvironment:
             import ensurepip  # noqa: F401
             import venv
 
+            print("MGH: Before EnvBuilder")
             builder = venv.EnvBuilder(clear=True, with_pip=True, symlinks=False)
+            print("MGH: After EnvBuilder")
             context = builder.ensure_directories(target)
+            print("MGH: After ensure_directories()")
 
             if (
                 WINDOWS
                 and hasattr(context, "env_exec_cmd")
                 and context.env_exe != context.env_exec_cmd
             ):
+                print(f"MGH: Resolving target {target}")
                 target = target.resolve()
+                print(f"MGH: Resolved: {target}")
 
             builder.create(target)
         except ImportError:
@@ -574,6 +580,8 @@ class Installer:
             self.version_file.write_text(version)
             self._install_comment(version, "Done")
 
+            print(f"MGH: env path is {env.path}")
+            print(f"MGH: env bin path is {env.bin_path}")
             return env.bin_path
 
     def uninstall(self) -> int:
@@ -625,7 +633,7 @@ class Installer:
             shutil.move(env_path, env_path_saved)
 
         try:
-            self._install_comment(version, "Creating environment")
+            self._install_comment(version, f"Creating environment at {env_path}")
             yield VirtualEnvironment.make(env_path)
         except Exception as e:
             if env_path.exists():
@@ -698,8 +706,10 @@ class Installer:
             message = POST_MESSAGE
 
         if new_windows_bin != self.bin_dir:
+            print(f"MGH: final path set to new_windows_bin={new_windows_bin}")
             final_path = new_windows_bin
         else:
+            print(f"MGH: new_windows_bin is empty: ={new_windows_bin}")
             final_path = self.bin_dir
 
         self._write(
